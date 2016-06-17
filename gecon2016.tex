@@ -6,13 +6,23 @@
 \documentclass{llncs}
 %
 \usepackage{makeidx}  % allows for indexgeneration
-\usepackage[UTF8]{inputenc}
+\usepackage[utf8]{inputenc}
 \usepackage{soul}
 \usepackage{graphicx}
+\usepackage{multirow}
+
+\usepackage{xcolor}
+\usepackage[draft,inline,nomargin,index]{fixme}
+\fxsetup{theme=color,mode=multiuser}
+\FXRegisterAuthor{ms}{envms}{\color{red}MS}
+\FXRegisterAuthor{yd}{envyd}{\color{yellow}YD}
+\FXRegisterAuthor{ft}{envft}{\color{orange}FT}
+\fxsetup{layout={footnote}}
+\fxusetheme{colorsig}
+
 
 \hyphenation{CYCLONE}
 
-%
 \begin{document}
 \pagestyle{headings} 
 \mainmatter              % start of the contributions
@@ -21,13 +31,13 @@
 
 \titlerunning{Federated, multi-cloud security architecture}  % abbreviated title (for running head)
 
-\author{Mathias Slawik\inst{1} \and Begüm Ilke Zilci\inst{1} \and Axel Küpper\inst{1} \and\\ Yuri Demchenko\inst{2} \and Christophe Blanchet\inst{3}}
+\author{Mathias Slawik\inst{1} \and Begüm Ilke Zilci\inst{1} \and Axel Küpper\inst{1} \and\\ Yuri Demchenko\inst{2} \and Fatih Turkmen \inst{2} \and \\Christophe Blanchet\inst{3} \and Jean-François Gibrat\inst{3}}
 
 \authorrunning{Slawik, et al.}
 
 \institute{Telekom Innovation Laboratories, Technische Universität Berlin\\Service-centric Networking\\\email{mathias.slawik|ilke.zilci|axel.kuepper@tu-berlin.de} \and
-UvA Information \and
-CNRS Information}
+System and Network Engineering, University of Amsterdam, The Netherlands, \email{y.demchenko|f.turkmen@uva.nl} \and
+CNRS, UMS 3601; Institut Français de Bioinformatique, IFB-core,\\ Avenue de la Terrasse, F-91190 Gif-sur-Yvette, France \email{christophe.blanchet|jean-francois.gibrat@france-bioinformatique.fr}}
 
 \maketitle              % typeset the title of the contribution
 
@@ -39,18 +49,18 @@ Contemporary multi-cloud application deployments require increasingly complex se
 
 There is widespread usage of cloud technologies within contemporary application deployments. Examples include using VMs and containers for componentization of applications, relying on highly scalable public cloud infrastructures, and embracing the immutable infrastructure paradigm to structure scalable cloud services, possibly deployed to multiple clouds. As the architecture of these applications becomes more complex, securing them also presents many new challenges that we address in this publication.
 
-Our contribution was devised in the CYCLONE research project that focuses on two main characteristics of contemporary cloud applications: they are deployed on multiple clouds, e.g., for increased resiliency or reduced latency, and they use federated identities for authentication and authorization, e.g., academic and 3rd party identities, such as Google and Facebook. The security architecture addresses requirements in these areas and therefore proves quite useful to the users. The project deliverables\footnote{\url{http://www.cyclone-project.eu/deliverables.html}} are complementary to this publication as they contain more information about the security architecture (D4.1), the APIs and data formats (D4.3), as well as the Bioinformatics Use Case (D3.1).
+Our contribution was devised in the CYCLONE innovation action that focuses on two main application characteristics: multi-cloud deployment, e.g., for increased resiliency or reduced latency, and authentication and authorization using federated identities, e.g., academic and social identities (Google, Facebook, etc.). We previously gave an overview about CYCLONE in \cite{SZDABLLB15}. The project deliverables\footnote{\url{http://www.cyclone-project.eu/deliverables.html}} are complementary to this publication as they contain more information about the security architecture (D4.1), the APIs and data formats (D4.3), as well as the Bioinformatics Use Case (D3.1).
 
 In order to be economically feasible, we decided to strive for the following four main solution qualities for our security architecture:
 
 \begin{itemize}
 	\item \textbf{Relevant.} By analyzing representative requirements of concrete users we ensure that we create a relevant architecture for contemporary cloud environments.
-	\item \textbf{Readily instantiable.} As we publish all components as open source\footnote{\url{https://github.com/cyclone-project/}}, our security architecture becomes almost instantly instantiable, saving efforts and costs on the side of our users.
-	\item \textbf{Comprehensible.} Through this article and the CYCLONE deliverables we provide a large volume of comprehensible supporting material, making it easy to follow and adapt our ideas.
+	\item \textbf{Readily instantiable.} Since we publish all components as open source\footnote{\url{https://github.com/cyclone-project/}}, our security architecture becomes almost instantly instantiable, saving efforts and costs on the side of our users.
+	\item \textbf{Comprehensible.} Through this article and the CYCLONE deliverables we provide a large volume of comprehensible supporting material, making it easy to follow and adopt our ideas.
 	\item \textbf{Mature.} We use established software as well as common protocols and libraries to create a stable and mature environment. This is further highlighted when we apply the architecture within the CYCLONE Bioinformatics Use Case and roll out security functionality in a production environment.
 \end{itemize}
 
-As a methodology we apply "Design Science in Information Systems Research" by Hevner et al. \cite{HMPR04} that also structures our presentation: first, in order to define the application area of our contribution we define the stakeholders and analyze their requirements in Section \ref{sec:requirements}. Afterwards, to ensure research rigor, we give a comprehensive overview about related works in Section \ref{sec:related-work}. Then, we describe the architecture in detail in Section \ref{sec:architecture} before evaluating it in Section \ref{sec:evaluation}. The evaluation also incorporates a discussion on the economical benefits. We conclude this publication by explicating the future extensions and open issues in Section \ref{sec:future} before summarizing it in Section \ref{sec:summary}.
+As a methodology we apply "Design Science in Information Systems Research" by Hevner et al. \cite{HMPR04} that also structures our presentation: first, in order to define the application area of our contribution we define the stakeholders and analyze their requirements in Section \ref{sec:requirements}. Afterwards, to ensure research rigor, we give a comprehensive overview about related works in Section \ref{sec:related-work}. Then, we describe the architecture in detail in Section \ref{sec:architecture} before evaluating it in Section \ref{sec:evaluation}. The evaluation also incorporates a discussion on the economical benefits. We conclude the paper by explicating the future extensions and open issues in Section \ref{sec:future} before summarizing it in Section \ref{sec:summary}.
 
 \section{Stakeholders and Requirements}
 \label{sec:requirements}
@@ -81,43 +91,63 @@ There are a lot of reasons why \textit{Application Service Providers} deploy the
 
 \subsubsection{Requirement 3: Unified logging for distributed systems}
 
-We find many systems to be distributed extensively, e.g., the underlying cloud infrastructure is often distributed over multiple data centers in different world regions while cloud services are frequently distributed over multiple cloud offerings. Gathering diagnostic messages or performance metrics from all of these systems in a unified system is oftentimes challenging. When such functionality is not available, debugging these systems as well as providing an audit trail becomes a very tedious endevour.
+We find many systems to be distributed extensively, e.g., the underlying cloud infrastructure is often distributed over multiple data centers in different world regions while cloud services are frequently distributed over multiple cloud offerings. Gathering diagnostic messages or performance metrics from all of these systems in a unified system is oftentimes challenging. When such functionality is not available, debugging these systems as well as providing an audit trail becomes a very tedious endeavour.
 
 \ul{Therefore, the security architecture should provide unified logging capabilities for highly distributed systems.}
 
-\section{Related Work}
+\section{Related Technologies}
 \label{sec:related-work}
 
-After establishing the stakeholders and their requirements, we now give an overview about the work related to our contribution.
+After establishing the stakeholders and their other requirements, we now give an overview about the technologies related to our contribution.
 
-\subsection{Standards and Organizations}
+\subsection{OpenID, OAuth, and OpenID Connect}
 
+The Web 2.0 gave rise to a number of standards for authentication and authorization. One of the driving use cases were 3rd party applications accessing resources on Web 2.0 platforms on behalf of their owners. The first applications required users to hand over their usernames and passwords so that they could interact with the users' resources. The severe security implications provided motivating factors for the creation of the related technologies \textit{OAuth}, \textit{OpenID}, and the recent \textit{OpenID Connect}: \textit{OpenID}\footnote{\url{http://openid.net/specs/openid-authentication-2\_0.html}} specifies how \textit{relying parties}, such as 3rd party applications, can "prove that an end user controls an Identifier". The communication flow ensures that users' credentials are not disclosed to \textit{relying parties}. After \textit{relying parties} have verified users' identities using OpenID, they can request access to users' resources by relying on another open standard: \textit{OAuth}\cite{RFC6749}.
 
+\textit{OAuth} is an authorization framework enabling "a third-party application to obtain limited access to an HTTP service, either on behalf of a resource owner [...] or by allowing the third-party application to obtain access on its own behalf". The most commonly used \textit{OAuth} flow is the Authorization Code Grant flow\footnote{See 4.1 of \cite{RFC6749}}: basically, \textit{relying parties} redirect users to their resource server requesting an access token. Users can then either deny or accept this request at their resource server. If they accept, the resource server issues a token to the relying parties that allows them access to users' resources. These tokens can be scoped and are revocable by the users.
 
-OAuth, OpenID, OpenID Connect, SAML, EduGAIN, XACML
+The most recent protocol, \textit{OpenID Connect}, was established to define how \textit{OAuth} should be used as a secure authentication protocol, addressing issues that persisted with the use of \textit{OAuth} for authentication\footnote{For a comprehensive discussion, see \url{http://oauth.net/articles/authentication}}.\textit{OpenID Connect} uses JSON Web Tokens\footnote{See \url{http://jwt.io} and \cite{RFC7519}}, a "compact, URL-safe means of representing claims to be transferred between to parties". The OpenID Connect Authentication Code Flow finally combines JWT and OAuth to provide secure web-based single sign-on for contemporary applications.
 
-% SAML authentication requests are cryptographically signed, so that they can be validated by the Identity Providers based on public-key cryptography.
+\subsection{SAML and eduGAIN}
 
-\subsection{Implementations}
+The Security Assertion and Markup Language (SAML) \footnote{\url{http://saml.xml.org/saml-specifications}} was first adopted as an OASIS Standard in November 2002. It "defines the syntax and processing semantics of assertions made about a subject by a system entity". It is therefore a prime candidate to support web-based Single Sign-On (SSO). It is built upon many Web Service technologies, such as XML, XML Encryption and Signature, as well as SOAP. Version 2.0 extended the standard considerably, adding simple HTTP bindings to use SAML without SOAP.
 
-Shibboleth IdP/SP, Keycloak, SimpleSAMLPHP, PAM, Moonshot, Nuv.la, OIDCACF, OIDCACF implementations \label{sec:oidcacfi}
+The GÉANT \textit{eduGAIN} service "interconnects identity federations around the world". Technically speaking, \textit{eduGAIN} provides a metadata aggregator, so that users from participating identity federations can consume services from other federations. Currently, there are 38 participating federations, 2093 Identity-, and 1208 Service Providers federated through \textit{eduGAIN}.
 
-\subsection{Methodologies}
+\subsection{Notable SAML 2.0 and OpenID Connect Implementations}
 
-OWASP security threat modeling, data flow modeling, risk assessment model
+For SAML, there are two implementations, Shibboleth and SimpleSAMLphp: Shibboleth\footnote{\url{http://shibboleth.net/}} is a free and open source implementation of SSO-related components, e.g., a Discovery Service, Identity Provider and Service Provider. The most recent 2.x version is based on SAML 2.0 and is extensively deployed in academic institutions worldwide. Another SAML 2.0 Identity and Service Provider implementation is SimpleSAMLphp\footnote{\url{https://simplesamlphp.org/}} that additionally supports \textit{OpenID} and \textit{OAuth}. 
 
-\section{Security Architecture}
-\label{sec:architecture}
+Keycloak\footnote{\url{http://keycloak.jboss.org/}} is another prominent implementation of all of the standards mentioned in this section, provides "Integrated SSO and IDM for browser apps and RESTful web service". It offers a number of related functions: an Identity Broker (including social login), integration with Active Directory and LDAP, as well as a rich set of libraries for different implementation platforms. All implementations are compatible, for example, the SimpleSAMLphp Service Provider can use Shibboleth- and Keycloak-issued SAML tokens for federated authentication.
+
+\subsection{PAM, XACML \& Moonshot}
+
+The Linux \textit{Pluggable Authentication Modules} (PAM)\footnote{\url{http://www.linux-pam.org/}} provide a flexible mechanism to configure system-level authentication, authorization, and accounting policies, decoupled from relying software. AAA-related system software, e.g., Secure Shell Server (SSH), the display manager, and getty processes, are exempt from the need to support any AAA mechanism. Instead, they rely on a simple interface to provide them policy-compliant AAA functionality. 
+
+The Extensible Access Control Markup Language (XACML)\footnote{\url{https://www.oasis-open.org/committees/xacml/}} provides an XML-based policy language as well as a distributed access control architecture. It enables \textit{attribute-based authorization}, that is, to use a diverse set of subject \textit{attributes}, e.g., group membership, confidentiality level, or means of access, to authorize \textit{actions} (e.g., "deploy", "read", "print") carried out on arbitrary \textit{resources}. Figure~\ref{fig:architecturexacml} presents the basic XACML architecture along with SAML. 
 
 \begin{figure}
 	\vspace*{-0.5cm}
 	\centering
-	\includegraphics[width=\columnwidth, clip=true, trim=0cm 1.4cm 1.8cm 0cm]{uml_components}
+	\includegraphics[scale=0.7]{XACMLBasedAuthzArchitecture}
+	\caption{SAML and XACML based authorization infrastructure}
+	\label{fig:architecturexacml}
+\end{figure}
+
+The Moonshot project\footnote{\url{https://wiki.moonshot.ja.net/}} "aims to enable federated access to virtually any application or service". One of the main components are federation-enabled versions of the popular OpenSSH Secure Shell Server. However, most of the relevant work ceased at the end of the last pilot in March 2015. Moonshot-provided software packages are now outdated and insecure due to lacking patches for recent vulnerabilities.
+
+\section{Security Architecture} \label{sec:architecture}
+Figure ~\ref{fig:architecture} shows the security architecture that we describe in this section. The following subsections explain its components in detail as well as how they implement the different security functions.
+
+\begin{figure}
+	\vspace*{-0.5cm}
+	\centering
+	\includegraphics[width=\columnwidth, clip=true, trim=0cm 1.4cm 1.8cm 0cm]{uml_components.pdf}
 	\caption{UML Component Diagram of the Security Architecture}
 	\label{fig:architecture}
 \end{figure}
 
-Figure ~\ref{fig:architecture} shows the security architecture that we describe in this section. The following subsections explain its components in detail as well as how they implement the different security functions.
+
 
 \subsection{Federation, Identity, and Metadata Provider}
 
@@ -131,15 +161,15 @@ As a side note: we refrain from calling the main component "Federated Identity P
 
 \subsection{Logging Middleware}
 
-The main purpose of the logging middleware is providing network-accessible logging endpoints to unify log messages into a common format. These endpoints should comprise of at least a simple TCP-based and a syslog-compatible logger. The middleware is commonly complemented by two other systems not shown in the diagram, as they are not part of the core security architecture: a \textit{Logging Frontend}, allowing end-users to consume the logs, as well as a \textit{Logging Backend}, e.g., a database or flat files, to persist the logs.
+The main purpose of the logging middleware is providing network-accessible logging endpoints to unify log messages into a common format. These endpoints should comprise of at least a simple TCP-based and a Syslog-compatible logger. The middleware is commonly complemented by two other systems not shown in the diagram, as they are not part of the core security architecture: a \textit{Logging Frontend}, allowing end-users to consume the logs, as well as a \textit{Logging Backend}, e.g., a database or flat files, to persist the logs.
 
 \subsection{VM / Container}
 
-Cloud applications are commonly deployed as virtual machines and/or in a container (e.g., Docker\footnote{\url{https://www.docker.com/}} or rkt\footnote{\url{https://github.com/coreos/rkt}}). These applications have three integration points with the security architecture: first, they rely on the OIDCACF to authenticate and authorize users - both on the application layer, through OpenID Connect libraries, as well as the OS layer, through the \textit{PAM module}. Second, they can log to the \textit{Logging Middleware}, e.g., through the simple TCP- as well as the syslog interface. Third, they rely on the \textit{Deployment Manager} to be deployed on the IaaS platform.
+Cloud applications are commonly deployed as virtual machines and/or in a container (e.g., Docker\footnote{\url{https://www.docker.com/}} or rkt\footnote{\url{https://github.com/coreos/rkt}}). These applications have three integration points with the security architecture: first, they rely on the OIDCACF to authenticate and authorize users - both on the application layer, through OpenID Connect libraries, as well as the OS layer, through the \textit{PAM module}. Second, they can log to the \textit{Logging Middleware}, e.g., through the simple TCP- as well as the Syslog interface. Third, they rely on the \textit{Deployment Manager} to be deployed on the IaaS platform.
 
 The \textit{PAM Module} allows the Linux operating system to authenticate users using their federated identities. In contrast to moonshot, it does not need a modified SSH client or server. Instead, it provides URLs to the users through the SSH "keyboard-interactive mode", which they open in their User Agents and carry out the regular OIDCACF. At the end, when the JSON web token is retrieved by the PAM module, it transforms the federated identities into existing or newly created local user accounts. More details can be found in the module source code\footnote{\url{add link}}.
 
-\subsection{Deyploment Manager and Self-service Portal}
+\subsection{Deployment Manager and Self-service Portal}
 
 The \textit{Deployment Manager} provides many facilities to support multi-cloud application deployment, e.g., it can describe application topologies, connect to different IaaS platform APIs for multi-cloud deployment, and offers a web- and optionally a RESTful interface. It allows end-users to use the OIDCACF for logging in and it can write its log messages to the \textit{Logging Middleware}. While the architecture does not specify how the \textit{Deployment Manager} models applications internally, common deployment managers, such as Nuv.la, use modules to break down application components and use base images and deployment scripts as an internal application model.
 
@@ -159,12 +189,12 @@ The two-step application deployment process is described in the following, divid
 
 \subsubsection{Federated authentication and authorization}
 
-In order to authenticate users based on their federated identities, cloud applications need to implement the OpenID Connect authentication code flow (OIDCACF). Using this workflow they can securely initiate authentication requests and retrieve claims about user identities from the \textit{Federation Provider}. When Application Service Providers prepare their application modules, they have different means of implementing the OIDCACF, as shown in section \ref{sec:oidcacfi}.
+In order to authenticate users based on their federated identities, cloud applications need to implement the OpenID Connect authentication code flow (OIDCACF). Using this workflow they can securely initiate authentication requests and retrieve claims about user identities from the \textit{Federation Provider}. When Application Service Providers prepare their application modules, they have different means of implementing the OIDCACF.
 
 After authenticating users, cloud applications can use the cryptographically signed claims presented in the JSON Web Token for authorization. There is a set of attributes recommended for any eduGAIN identity provider that is shown in Table \ref{tab:eduGAIN-recommended-attributes}. The research institutions are free to implement any number of attributes and also additional attributes, for example group membership, in order to only allow certain users in this group access to the service. At last, the Federation Provider also supports creating local accounts or using a local LDAP for special cases not involving federated identities.
 
 \def\arraystretch{1.5}
-\begin{table}[]
+\begin{table}[htbp]
 	\centering
 	\caption{eduGAIN recommended attributes}
 	\label{tab:eduGAIN-recommended-attributes}
@@ -185,7 +215,7 @@ After authenticating users, cloud applications can use the cryptographically sig
 
 \subsection{Distributed Logging}
 
-As mentioned before, the \textit{Logging Middleware} should be quite flexible in the formats it accepts for logging as well as the structure of the log messages. For example, the Logstash middleware supports 49 different input plugins\footnote{See: \url{https://www.elastic.co/guide/en/logstash/current/input-plugins.html}}, competing fluentd also features an extensive list of inputs\footnote{See: \url{http://www.fluentd.org/plugins/all\#input-output}}. The conceptual distribution of the logging system into middleware, database, and frontend components allows these components to be clustered and scaled independently, supporting diverse deployment topologies, based on performance and latency requirements.
+As mentioned before, the \textit{Logging Middleware} should be quite flexible in the formats it accepts for logging as well as the structure of the log messages. For example, the Logstash middleware supports 49 different input plugins\footnote{See: \url{https://www.elastic.co/guide/en/logstash/current/input-plugins.html}}, competing fluentd also features an extensive list of inputs\footnote{See: \url{http://www.fluentd.org/plugins/all\#input-output}}. The conceptual distribution of the logging system into middleware, database, and front end components allows these components to be clustered and scaled independently, supporting diverse deployment topologies, based on performance and latency requirements.
 
 When applied in a federated setting, there needs to be at least one log message field identifying the respective client, so that a filter can be applied that only shows the log messages to a client which relate to the client's actions. We have created such an exemplary filter for the ELK stack\footnote{See: \url{https://github.com/cyclone-project/cyclone-logging}} that we use in production. Together with an OIDCACF-compliant logging dashboard, this provides a multi-tenancy logging system for diagnosing problems as well as auditing user actions.
 
@@ -212,7 +242,7 @@ The CYCLONE Innovation Action is funded by the European Commission in the Horizo
 
 We set up and registered the Federation Provider with eduGAIN in order to enable Bioinformatics applications to rely on federated authentication. The process is different for each NREN, in our case it meant registering the Federation Provider metadata\footnote{\url{https://technical.edugain.org/show\_entity\_details.php?entity\_row\_id=213}} as a Service Provider (SP) through the DFN, the German NREN. To allow attribute retrieval we followed the "Data Protection Code of Conduct Cookbook"\footnote{\url{https://wiki.edugain.org/Data\_Protection\_Code\_of\_Conduct\_Cookbook}}.
 
-However, as the claims about eduGAIN and its implementation in reality do seldomly match, we had two major difficulties: first of all, not every Identity Provider (IdP) is fully accustomed with all of the accompanying technologies and procedures - requiring manual coordination effort. Second, there are only recommendations but no requirements for the attribute release. That's why some IdPs chose to release all attributes by default, some only when SPs follow the eduGAIN/GÉANT Data Protection CoC, some implement custom opt-in/opt-out approval processes, and some release no attributes at all. In such an environment, having a Federation Provider for \textit{all of the 2091 Identity Providers} would require more effort, than the CYCLONE project (and surely other research projects) can provide, thus becoming an impossible goal.
+However, as the claims about eduGAIN and its implementation in reality do seldom match, we had two major difficulties: first of all, not every Identity Provider (IdP) is fully accustomed with all of the accompanying technologies and procedures - requiring manual coordination effort. Second, there are only recommendations but no requirements for the attribute release. That's why some IdPs chose to release all attributes by default, some only when SPs follow the eduGAIN/GÉANT Data Protection CoC, some implement custom opt-in/opt-out approval processes, and some release no attributes at all. In such an environment, having a Federation Provider for \textit{all of the 2091 Identity Providers} would require more effort, than the CYCLONE project (and surely other research projects) can provide, thus becoming an impossible goal.
 
 \subsubsection{Federated authentication for the biomedical data analysis VM.}
 
@@ -220,7 +250,7 @@ Without going much into detail, the Biomedical data analysis VM basically allows
 
 \subsubsection{PAM-based federated authorization.}
 
-Bioinformaticians collaboratively use the "microbial genomes analysis" as well as the "live remote cloud sequencing data processing" VMs and require simple data sharing between them. As they access the VMs using SSH and X2Go (which relies on SSH), enforcing access control using Linux filesystem ACLs was obvious. We integrated the PAM module into the VMs to map federated identities to local user accounts. Now the bioinformaticians can, for example, securely assign access rights to any collaborator using their email address.
+Bioinformaticians collaboratively use the "microbial genomes analysis" as well as the "live remote cloud sequencing data processing" VMs and require simple data sharing between them. As they access the VMs using SSH and X2Go (which relies on SSH), enforcing access control using Linux file system ACLs was obvious. We integrated the PAM module into the VMs to map federated identities to local user accounts. Now the bioinformaticians can, for example, securely assign access rights to any collaborator using their email address.
 
 \subsection{Economic Benefits}
 
@@ -234,7 +264,7 @@ From our experience and those of the use case partners, working with OpenID Conn
 
 \subsubsection{Extensive identity brokering without application modification.}
 
-The Federation Provider can broker identities not only from eduGAIN, but also from LDAP, and other web platforms, for example, Google, Facebook, Twitter, Github, LinkedIn, Microsoft, and StackOverflow. As long as the relying cloud applications implement the OIDCACF, they do not need to be adapted. This makes it easier to share, for example, human biomedical data analysis to people not having an eduGAIN account.
+The Federation Provider can broker identities not only from eduGAIN, but also from LDAP, and other web platforms, for example, Google, Facebook, Twitter, GitHub, LinkedIn, Microsoft, and Stack Overflow. As long as the relying cloud applications implement the OIDCACF, they do not need to be adapted. This makes it easier to share, for example, human biomedical data analysis to people not having an eduGAIN account.
 
 \subsubsection{Easy reuse of identities.} Before CYCLONE, Bioinformaticians were required to either learn how to manage SSH keys or memorize yet another local account in order to access their VMs. Now, they can just reuse their existing federated identities, thus reducing identity management overheads and simplifying account management on the cloud provider's side.
 
@@ -244,7 +274,7 @@ The Federation Provider can broker identities not only from eduGAIN, but also fr
 
 \subsection{Security Analysis of the Federation Provider}
 
-We used the OWASP Application Threat Modelling (ATM) methodology to formally analyze the main component of the security architecture, the Federation Provider. Our goal was to assess the current level of security, to find out possible security threats, and to guide further steps to strengthen our architecture. While all details of this process can be found in the CYCLONE Deliverable 4.1, in this subsection we give an overview about the four main steps and their results:
+We used the OWASP Application Threat Modelling (ATM) methodology\footnote{\url{https://www.owasp.org/index.php/Application\_Threat\_Modeling}} to formally analyze the main component of the security architecture, the Federation Provider. Our goal was to assess the current level of security, to find out possible security threats, and to guide further steps to strengthen our architecture. While all details of this process can be found in the CYCLONE Deliverable 4.1, in this subsection we give an overview about the four main steps and their results:
 
 \subsubsection{Step 1: Application decomposition.}
 
@@ -267,7 +297,7 @@ Figure \ref{fig:dataflow} shows the modeling of the data processes, -stores, -fl
 \begin{figure}
 	\vspace*{-0.5cm}
 	\centering
-	\includegraphics[width=\columnwidth, clip=true, trim=0.9cm 12.4cm 5cm 0.3cm]{data_flow}
+	\includegraphics[width=\columnwidth, clip=true, trim=0.9cm 12.4cm 5cm 0.3cm]{data_flow.pdf}
 	\caption{Federation Provider Data Flow Diagram}
 	\label{fig:dataflow}
 \end{figure}
@@ -299,22 +329,29 @@ Our previous work \cite{S13d} establishes an end-to-end data security protocol, 
 
 \subsection{Attribute-based Access Control and Secure Trust Bootstrapping}
 
-In our past publications \cite{DLLG10,NMDL12} we showed how a distributed attribute-based access control infrastructure, such as XACML, can provide many benefits in dynamically provisioned cloud environments. In the future we will integrate this work into the security architecture to create opportunities for new use cases as well as further reduce management effort - especially when multiple cloud applications share the same access control policies.
+While PAM-based authorizations are sufficient for most of the use cases considered in CYCLONE, there could be certain extended scenarios where a more flexible authorization scheme is necessary. In our past work~\cite{DLLG10,NMDL12} we showed how a XACML-based distributed attribute-based access control infrastructure provides many benefits in dynamically provisioned cloud environments. As CYCLONE authorization policies can be expressed using the XACML language (e.g., user "bioinformatician", resources "VMs" or "genome data", and action "deploy" or "read"), we foresee that the XACML architecture is applicable to the managed cloud environments of CYCLONE. In the future we will integrate this work into the security architecture to create opportunities for new use cases (e.g. data erasure) as well as a further reduction of management effort - especially when multiple cloud applications share the same access control policies. In addition to attribute-based policies, we will employ a secure trust bootstrapping mechanism~\cite{YuriBootstrapping12} for the establishment of trust between provisioned cloud resources. Secure trust bootstrapping enables the dynamic configuration of certain access control attributes for VMs during deployment.
 
 \subsection{Open Issues}
 
 We see two main open issues for which we don't yet have an optimal solution:
 
 \subsubsection{Federated authentication using non-browser software.}
-
 Both OpenID Connect as well as SAML are aimed for usage by browsers. When trying to use them with non-browser software, e.g., RESTful API clients, there are a lot of issues. For OpenID Connect there is the Direct Access Grant\footnote{\url{https://keycloak.github.io/docs/userguide/keycloak-server/html/direct-access-grants.html}} flow to directly retrieve an identity token using a username/password combination, but this has many negative security implications. For SAML2.0 there is the "Enhanced Client or Proxy"\footnote{\url{https://wiki.shibboleth.net/confluence/display/CONCEPT/ECP}} that supports SAML2.0 clients which are \textit{not} browsers. While there is a working implementation in the Shibboleth Identity Provider, not one of the 2000+ eduGAIN identity providers has enabled it.
 
-\subsubsection{Federated access delegation to cloud resources.} While the PAM module allows people to use their federated identities for logging into systems, allowing those systems (or applications on those VMs) to access other cloud resources on behalf of the federated identity is still an ongoing issue. While there are related technologies, such as OAuth or Kerberos, we did not find a simple to use and economically feasible solution to apply.
+\subsubsection{Federated access delegation to cloud resources.} 
+While the PAM module allows people to use their federated identities for logging into systems, allowing those systems (or applications on those VMs) to access other cloud resources on behalf of the federated identity is still an ongoing issue. While there are related technologies, such as OAuth or Kerberos, we did not find a simple to use and economically feasible solution to apply.
 
 \section{Summary and Outlook}
 \label{sec:summary}
 
+By following the architecture presented in this publication we hope to significantly reduce the efforts for security practitioners and researchers to provide security for federated multi cloud applications. We do much more than simply showing how contemporary technologies interact: we additionally provide design rationale in form of stakeholders and requirements, evaluate it through both real-world application as well as a thorough analysis, and provide readily instantiable components on our public code repository\footnote{\url{https://github.com/cyclone-project}}. In the future, we hope to work together with the community on functionally extending the architecture as well as deploying it to new use cases.
+
+\section*{Acknowledgements}
+
+The authors wish to thank the members of the bioinformatics platforms Centre Léon Bérard (Lyon, France) and IFB-MIGALE (Jouy-en-Josas, France) to provide their bioinformatics applications as respective use cases "Biomedical data analysis" and "Bacterial genomes analysis". This work is supported by the CYCLONE Horizon 2020 Innovation Action
+CYCLONE\footnote{\url{http://www.cyclone-project.eu}}, funded by the European Commission under grant number 644925.
+
 \bibliographystyle{splncs03}
-\bibliography{gecon2016}
+\bibliography{gecon2016,YuriBootstrapping,rfc}
 
 \end{document}
